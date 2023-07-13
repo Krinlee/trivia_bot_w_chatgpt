@@ -6,9 +6,8 @@ from dotenv import load_dotenv
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='%', intents = intents)
 
-# usedQ = []
-# q = []
-# if_not = []
+usedQ = []
+q = []
 
 
 # .env parts
@@ -32,7 +31,7 @@ target_channel_id = tchan
 # Time settings
 
 utc = datetime.timezone.utc
-time = datetime.time(hour=13, minute = 35)
+time = datetime.time(hour=20, minute = 21)
 
 
 
@@ -61,11 +60,6 @@ async def on_ready():
 
 # Command to have the bot DM the answer
 
-# async def ans_dm(member):
-	# f = open('answer.txt', 'r')
-	# trivia_ans = f.read()
-	# f.close()
-	# await member.send(trivia_ans)
 
 @bot.command()
 async def ans(ctx):
@@ -86,16 +80,22 @@ async def ans(ctx):
 
 @tasks.loop(time=time)
 async def trivia():
-    usedQ = []
-    q = []
+   
     openai.api_key = os.getenv("OPENAI_API_KEY")
     message_channel = bot.get_channel(target_channel_id)
-    f = open('question.txt', 'r')
-    o_question = f.read()
-    f.close()
-    f = open('answer.txt', 'r')
-    o_answer = f.read()
-    f.close()
+
+    try:
+        with open('question.txt', 'r') as f:
+            o_question = f.read()
+    except IOError as e:
+        print(f"Error reading question.txt: {e}")
+
+    try:
+        with open('answer.txt', 'r') as f:
+            o_answer = f.read()
+    except IOError as e:
+        print(f"Error reading answer.txt: {e}")
+
     await message_channel.send(f"""@here Yesterday's question was:
     
      ¯\_(ツ)_/¯  {o_question}  ¯\_(ツ)_/¯""")
@@ -114,11 +114,12 @@ async def trivia():
 
     async def qTrivia():
         while True:
-            # with open("used.txt", "r") as f:
-            #     usedQuestions = f.read().splitlines()
-            f = open("used.txt", "r")
-            usedQuestions = f.read()
-            f.close()
+            try:
+                with open("used.txt", "r") as f:
+                    usedQuestions = f.read()
+            except IOError as e:
+                print(f"Error reading used.txt: {e}")
+
             usedQ.append(usedQuestions)
             prompt = "Give me a really good trivia question."
             completion = openai.ChatCompletion.create(
@@ -130,23 +131,31 @@ async def trivia():
                     )
             
             response = completion.choices[0].message.content
-            f = open("question.txt", "w")
-            f.write(f"{response}")
-            f.close()
-            with open("question.txt", "r") as f:
-                notin = f.read().splitlines()
-            f.close()
-            q.append(notin[2])
-            if q not in usedQ:
-                print(q)
 
-                f = open("used.txt", "a")
-                f.write(f"{q}")
-                f.close()
+            try:
+                with open("question.txt", "w") as f:
+                    f.write(f"{response}")
+            except IOError as e:
+                print(f"Error writing to question.txt: {e}")
+
+            try:
+                with open("question.txt", "r") as f:
+                    notin = f.read().splitlines()
+            except IOError as e:
+                print(f"Error reading question.txt: {e}")
+
+            q.append(notin[2])
+
+            if notin[2] not in usedQ:
+                try:
+                    with open("used.txt", "a") as f:
+                        f.write(f"{notin[2]}")
+                except IOError as e:
+                    print(f"Error writing to used.txt: {e}")
+
                 break
             
             
-        # print(test)
         await message_channel.send(f"""🧠    🧠   -> {response} <-    🧠   🧠
         
         # (∩｀-´)⊃━☆ﾟ.*･｡ﾟ""")
@@ -155,9 +164,6 @@ async def trivia():
     # chatgpt gives answer
 
     async def aTrivia():
-        # f = open("question.txt", "r")
-        # question = f.read()
-        # f.close()
         prompt = f"What is the answer to '{q}'?"
         completion = openai.ChatCompletion.create(
                 model = "gpt-3.5-turbo",
@@ -167,13 +173,20 @@ async def trivia():
                 )
         
         response = completion.choices[0].message.content
-        f = open("answer.txt", "w")
-        f.write(f"{response}")
-        f.close()
+        with open("answer.txt", "w") as f:
+            f.write(f"{response}")
+
+
+    # async def clear():
+    #     usedQ.clear()
+    #     q.clear()
 
 
     await qTrivia()
     await aTrivia()
+    # await clear()
+    with open("test.txt", "w") as f:
+        f.write("This is a freakin' test!")
 
 
 
