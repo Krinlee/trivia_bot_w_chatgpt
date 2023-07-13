@@ -31,7 +31,7 @@ target_channel_id = tchan
 # Time settings
 
 utc = datetime.timezone.utc
-time = datetime.time(hour=20, minute = 21)
+time = datetime.time(hour=20, minute = 44)
 
 
 
@@ -80,6 +80,8 @@ async def ans(ctx):
 
 @tasks.loop(time=time)
 async def trivia():
+    usedQ.clear()
+    q.clear()
    
     openai.api_key = os.getenv("OPENAI_API_KEY")
     message_channel = bot.get_channel(target_channel_id)
@@ -149,7 +151,7 @@ async def trivia():
             if notin[2] not in usedQ:
                 try:
                     with open("used.txt", "a") as f:
-                        f.write(f"{notin[2]}")
+                        f.write(f"{notin[2]}\n")
                 except IOError as e:
                     print(f"Error writing to used.txt: {e}")
 
@@ -175,18 +177,13 @@ async def trivia():
         response = completion.choices[0].message.content
         with open("answer.txt", "w") as f:
             f.write(f"{response}")
-
-
-    # async def clear():
-    #     usedQ.clear()
-    #     q.clear()
+        
 
 
     await qTrivia()
     await aTrivia()
-    # await clear()
     with open("test.txt", "w") as f:
-        f.write("This is a freakin' test!")
+        f.write("Hold on to your hat!!")
 
 
 
