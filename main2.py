@@ -8,6 +8,7 @@ bot = commands.Bot(command_prefix='%', intents = intents)
 
 usedQ = []
 q = []
+response = ''
 randomN = random.randint(1, 100)
 
 
@@ -32,7 +33,7 @@ target_channel_id = tchan
 # Time settings
 
 utc = datetime.timezone.utc
-time = datetime.time(hour=2, minute = 37)
+time = datetime.time(hour=13, minute = 8)
 
 
 
@@ -108,87 +109,92 @@ async def trivia():
     As always, post your answers to the trivia in the trivia-answers channel.
 
     (っ'ヮ'c)	The answer will be posted here on the next day before the next trivia question.""")
-    await asyncio.sleep(3)
-
-
-    # chatgpt ask trivia
-
-    async def qTrivia():
-        while True:
-            usedQ.clear()
-            q.clear()
-            try:
-                with open("used.txt", "r") as f:
-                    usedQuestions = f.read()
-            except IOError as e:
-                print(f"Error reading used.txt: {e}")
-
-            usedQ.extend(usedQuestions.splitlines())
-
-            prompt = "Give me a really good trivia question."
-            completion = openai.ChatCompletion.create(
-                    model = "gpt-3.5-turbo",
-                    messages = [{"role": "system", "content": f"Your name is Porkchop. You are a dog. You will not state that you are a computer program or an AI language model. You are a trivia master."},
-                        {"role": "user", "content": prompt}],
-                    temperature = 0.1,
-                    max_tokens = 1000
-                    )
-            
-            response = completion.choices[0].message.content
-
-            try:
-                with open("question.txt", "r") as f:
-                    notin = f.read().splitlines()
-            except IOError as e:
-                print(f"Error reading question.txt: {e}")
-
-            if len(notin) == 3:
-                q.append(notin[2])
-            elif len(notin) == 1:
-                q.append(notin[0])
-
-            if q not in usedQ:
-                try:
-                    with open("question.txt", "w") as f:
-                        f.write(f"{q}")
-                except IOError as e:
-                    print(f"Error writing to question.txt: {e}")
-
-                try:
-                    with open("used.txt", "a") as f:
-                        f.write(f"{q}\n")
-                except IOError as e:
-                    print(f"Error writing to used.txt: {e}")
-
-                break
-            
-            
-        await message_channel.send(f"""🧠    🧠   -> {response} <-    🧠   🧠
-        
-        # (∩｀-´)⊃━☆ﾟ.*･｡ﾟ""")
-        
-
-    # chatgpt gives answer
-
-    async def aTrivia():
-        prompt = f"What is the answer to '{q}'?"
-        completion = openai.ChatCompletion.create(
-                model = "gpt-3.5-turbo",
-                messages = [{"role": "user", "content": prompt}],
-                temperature = 0.1,
-                max_tokens = 100
-                )
-        
-        response = completion.choices[0].message.content
-        with open("answer.txt", "w") as f:
-            f.write(f"{response}")
-        
-
-
+    await asyncio.sleep(5)
+    # await qTrivia(message_channel)
     await qTrivia()
     await aTrivia()
     with open("test.txt", "w") as f:
         f.write(f"{randomN}")
+
+    await message_channel.send(f"""🧠    🧠   -> {response} <-    🧠   🧠
+    
+    # (∩｀-´)⊃━☆ﾟ.*･｡ﾟ""")
+
+
+# chatgpt ask trivia
+
+async def qTrivia():
+    while True:
+        usedQ.clear()
+        q.clear()
+        try:
+            with open("used.txt", "r") as f:
+                usedQuestions = f.read()
+        except IOError as e:
+            print(f"Error reading used.txt: {e}")
+
+        usedQ.extend(usedQuestions.splitlines())
+
+        prompt = "Give me a really good trivia question."
+        completion = openai.ChatCompletion.create(
+                model = "gpt-3.5-turbo",
+                messages = [{"role": "system", "content": f"Your name is Porkchop. You are a dog. You will not state that you are a computer program or an AI language model. You are a trivia master."},
+                    {"role": "user", "content": prompt}],
+                temperature = 0.1,
+                max_tokens = 1000
+                )
+        
+        response = completion.choices[0].message.content
+
+        try:
+            with open("question.txt", "w") as f:
+                f.write(f"{response}")
+        except IOError as e:
+            print(f"Error writing to question.txt: {e}")
+
+        try:
+            with open("question.txt", "r") as f:
+                notin = f.read().splitlines()
+        except IOError as e:
+            print(f"Error reading question.txt: {e}")
+
+        if len(notin) == 3:
+            q.append(notin[2])
+        elif len(notin) == 1:
+            q.append(notin[0])
+
+        if q[0] not in usedQ:
+
+            try:
+                with open("used.txt", "a") as f:
+                    f.write(f"{q[0]}\n")
+            except IOError as e:
+                print(f"Error writing to used.txt: {e}")
+
+            break
+        
+        
+   
+    
+
+# chatgpt gives answer
+
+async def aTrivia():
+    prompt = f"What is the answer to '{usedQ}'?"
+    completion = openai.ChatCompletion.create(
+            model = "gpt-3.5-turbo",
+            messages = [{"role": "user", "content": prompt}],
+            temperature = 0.1,
+            max_tokens = 100
+            )
+    
+    response = completion.choices[0].message.content
+    with open("answer.txt", "w") as f:
+        f.write(f"{response}")
+        
+
+
+
 
 
 
