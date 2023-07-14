@@ -8,6 +8,7 @@ bot = commands.Bot(command_prefix='%', intents = intents)
 
 usedQ = []
 q = []
+randomN = random.randint(1, 100)
 
 
 # .env parts
@@ -31,7 +32,7 @@ target_channel_id = tchan
 # Time settings
 
 utc = datetime.timezone.utc
-time = datetime.time(hour=20, minute = 44)
+time = datetime.time(hour=2, minute = 37)
 
 
 
@@ -80,8 +81,6 @@ async def ans(ctx):
 
 @tasks.loop(time=time)
 async def trivia():
-    usedQ.clear()
-    q.clear()
    
     openai.api_key = os.getenv("OPENAI_API_KEY")
     message_channel = bot.get_channel(target_channel_id)
@@ -116,13 +115,16 @@ async def trivia():
 
     async def qTrivia():
         while True:
+            usedQ.clear()
+            q.clear()
             try:
                 with open("used.txt", "r") as f:
                     usedQuestions = f.read()
             except IOError as e:
                 print(f"Error reading used.txt: {e}")
 
-            usedQ.append(usedQuestions)
+            usedQ.extend(usedQuestions.splitlines())
+
             prompt = "Give me a really good trivia question."
             completion = openai.ChatCompletion.create(
                     model = "gpt-3.5-turbo",
@@ -135,23 +137,26 @@ async def trivia():
             response = completion.choices[0].message.content
 
             try:
-                with open("question.txt", "w") as f:
-                    f.write(f"{response}")
-            except IOError as e:
-                print(f"Error writing to question.txt: {e}")
-
-            try:
                 with open("question.txt", "r") as f:
                     notin = f.read().splitlines()
             except IOError as e:
                 print(f"Error reading question.txt: {e}")
 
-            q.append(notin[2])
+            if len(notin) == 3:
+                q.append(notin[2])
+            elif len(notin) == 1:
+                q.append(notin[0])
 
-            if notin[2] not in usedQ:
+            if q not in usedQ:
+                try:
+                    with open("question.txt", "w") as f:
+                        f.write(f"{q}")
+                except IOError as e:
+                    print(f"Error writing to question.txt: {e}")
+
                 try:
                     with open("used.txt", "a") as f:
-                        f.write(f"{notin[2]}\n")
+                        f.write(f"{q}\n")
                 except IOError as e:
                     print(f"Error writing to used.txt: {e}")
 
@@ -183,7 +188,7 @@ async def trivia():
     await qTrivia()
     await aTrivia()
     with open("test.txt", "w") as f:
-        f.write("Hold on to your hat!!")
+        f.write(f"{randomN}")
 
 
 
